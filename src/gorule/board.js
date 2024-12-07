@@ -76,9 +76,8 @@ export class Board {
         if (neighborString !== string) {
           neighborString.addLiberty(point)
         }
-
-        this.grid.delete(point.toString())
       })
+      this.grid.delete(point.toString())
     })
   }
 

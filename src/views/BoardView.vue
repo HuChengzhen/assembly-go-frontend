@@ -1,9 +1,19 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import woodtexture from '@/assets/images/woodtexture.jpg'
 import { GameState } from '@/gorule/gameState.js'
 import { Move } from '@/gorule/move.js'
 import { Point } from '@/gorule/point.js'
+
+let socket
+
+const sendMessage = (message) => {
+  if (socket.readyState === WebSocket.OPEN) {
+    socket.send(message)
+  } else {
+    console.error('WebSocket is not open. Ready state is:', socket.readyState)
+  }
+}
 
 const lines = 19
 let boardUpLeftX
@@ -180,9 +190,24 @@ const loadImage = () => {
 onMounted(() => {
   loadImage()
   window.addEventListener('resize', updateStageSize)
-})
+  socket = new WebSocket('ws://127.0.0.1:8080/ws')  socket.addEventListener('open', (event) => {
+    console.log('WebSocket is open now.')
+ })
 
-onBeforeUnmount(() => {
+ // Event listener for when a message is received from the server
+  socket.addEventListener('message', (event) => {
+    console.log('Message from server:', event.data)
+ })
+
+ socket.addEventListener('close', (event) => {
+    console.log('WebSocket is closed now.')
+  )
+
+  ocket.addEventListener('error', (event) => {
+    console.error('WebSocket error observed:', event)
+  })})
+
+oBeforeUnmount(() => {
   window.removeEventListener('resize', updateStageSize)
 })
 
@@ -256,9 +281,11 @@ const handleClick = (event) => {
 
   const { row, col } = transFormPosition(getMovePosition(boardX, boardY))
 
-  if (cursorConfig.value) {
-    const move = new Move(new Point(row, col), null, null)
+  const point = new Point(row, col)
+  if (gameState.value.board.isOnGrid(point)) {
+    const move = new Move(point, null, null)
     gameState.value = gameState.value.applyMove(move)
+    sendMessage(JSON.stringify({ row, col }))
   }
 }
 

@@ -15,6 +15,7 @@ export class GameState {
 
   applyMove(move) {
     if (!this.isValidMove(move)) {
+      console.log('Invalid move')
       return this
     }
 

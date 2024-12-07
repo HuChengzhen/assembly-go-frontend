@@ -16,10 +16,15 @@ export function mapEquals(mapA, mapB) {
 
 export function deepCopyMap(originalMap) {
   const newMap = new Map()
+  const map = new Map()
   originalMap.forEach((value, key) => {
-    const copiedKey = deepCopy(key)
-    const copiedValue = deepCopy(value)
-    newMap.set(copiedKey, copiedValue)
+    if (!map.has(value)) {
+      const copy = deepCopy(value)
+      map.set(value, copy)
+      newMap.set(key, copy)
+    } else {
+      newMap.set(key, map.get(value))
+    }
   })
   return newMap
 }
