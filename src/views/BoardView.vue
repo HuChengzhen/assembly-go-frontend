@@ -103,8 +103,8 @@ const updateStageSize = () => {
   imageConfig.value.height = frameSize
 
   // Set the frame position (centered on the canvas)
-  imageConfig.value.x = (size - frameSize) / 2
-  imageConfig.value.y = (size - frameSize) / 2
+  // imageConfig.value.x = (size - frameSize) / 2
+  // imageConfig.value.y = (size - frameSize) / 2
 
   boardSize = size * 0.9
 
