@@ -9,7 +9,7 @@ const lines = 19
 let boardUpLeftX
 let boardUpLeftY
 let boardSize
-let lineSpacing
+let lineSpacing = ref(0)
 const cursorConfig = ref(null)
 const horizontalLines = ref([])
 const verticalLines = ref([])
@@ -25,8 +25,8 @@ const moves = computed(() => {
       if (color) {
         const position = { row: lines - i, col: j - 1 }
         moves.push({
-          x: lineSpacing * position.col + boardUpLeftX,
-          y: lineSpacing * position.row + boardUpLeftY,
+          x: lineSpacing.value * position.col + boardUpLeftX,
+          y: lineSpacing.value * position.row + boardUpLeftY,
           radius: boardSize * 0.025,
           fill: color.toString(),
         })
@@ -113,7 +113,7 @@ const updateStageSize = () => {
 
   // Grid density and line spacing
   const gridDensity = lines - 1 // Number of lines
-  lineSpacing = boardSize / gridDensity
+  lineSpacing.value = boardSize / gridDensity
 
   // Clear previous lines
   horizontalLines.value = []
@@ -126,9 +126,9 @@ const updateStageSize = () => {
     horizontalLines.value.push({
       points: [
         boardUpLeftX,
-        boardUpLeftY + i * lineSpacing,
+        boardUpLeftY + i * lineSpacing.value,
         boardUpLeftX + boardSize,
-        boardUpLeftY + i * lineSpacing,
+        boardUpLeftY + i * lineSpacing.value,
       ], // Horizontal line
       stroke: 'black',
       strokeWidth: strokeWidth,
@@ -139,9 +139,9 @@ const updateStageSize = () => {
   for (let i = 0; i <= gridDensity; i++) {
     verticalLines.value.push({
       points: [
-        boardUpLeftX + i * lineSpacing,
+        boardUpLeftX + i * lineSpacing.value,
         boardUpLeftY,
-        boardUpLeftX + i * lineSpacing,
+        boardUpLeftX + i * lineSpacing.value,
         boardUpLeftY + boardSize,
       ], // Vertical line
       stroke: 'black',
@@ -153,8 +153,8 @@ const updateStageSize = () => {
 
   for (let i = 0; i < startPosition.length; i++) {
     stars.value.push({
-      x: lineSpacing * startPosition[i].column,
-      y: lineSpacing * startPosition[i].row,
+      x: lineSpacing.value * startPosition[i].column,
+      y: lineSpacing.value * startPosition[i].row,
       radius: boardSize * 0.01,
       fill: 'black',
     })
@@ -198,8 +198,8 @@ const getCanvasPosition = (event) => {
 }
 
 function getMovePosition(boardX, boardY) {
-  const row = Math.round(boardY / lineSpacing)
-  const col = Math.round(boardX / lineSpacing)
+  const row = Math.round(boardY / lineSpacing.value)
+  const col = Math.round(boardX / lineSpacing.value)
   return { row, col }
 }
 
@@ -217,8 +217,8 @@ const handleMouseMove = (event) => {
 
   const { row, col } = getMovePosition(boardX, boardY)
 
-  const centerX = boardUpLeftX + col * lineSpacing
-  const centerY = boardUpLeftY + row * lineSpacing
+  const centerX = boardUpLeftX + col * lineSpacing.value
+  const centerY = boardUpLeftY + row * lineSpacing.value
 
   const cursorWidth = boardSize * 0.03
 
