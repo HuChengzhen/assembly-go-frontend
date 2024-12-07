@@ -1,4 +1,4 @@
-class Color {
+export class Color {
   static BlackColor = 1
   static WhiteColor = 2
 
@@ -21,11 +21,19 @@ class Color {
 
   toString() {
     if (this.color === Color.BlackColor) {
-      return 'Black'
+      return 'black'
     } else if (this.color === Color.WhiteColor) {
-      return 'White'
+      return 'white'
     } else {
       throw new Error(`Unknown color ${this.color}`)
     }
+  }
+
+  equals(other) {
+    return this.color === other.color
+  }
+
+  copy() {
+    return this
   }
 }

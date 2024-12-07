@@ -1,7 +1,7 @@
-class Move {
+export class Move {
   constructor(point, isPass, isResign) {
     this.point = point
-    this.ispass = isPass
+    this.isPass = isPass
     this.isResign = isResign
   }
 

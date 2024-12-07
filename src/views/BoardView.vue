@@ -1,16 +1,42 @@
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import woodtexture from '@/assets/images/woodtexture.jpg'
+import { GameState } from '@/gorule/gameState.js'
+import { Move } from '@/gorule/move.js'
+import { Point } from '@/gorule/point.js'
 
 const lines = 19
-let upLeftX
-let upLeftY
+let boardUpLeftX
+let boardUpLeftY
 let boardSize
 let lineSpacing
 const cursorConfig = ref(null)
 const horizontalLines = ref([])
 const verticalLines = ref([])
 const stars = ref([])
+const gameState = ref(GameState.newGame(lines))
+
+const moves = computed(() => {
+  const moves = []
+
+  for (let i = 1; i <= lines; i++) {
+    for (let j = 1; j <= lines; j++) {
+      const color = gameState.value.board.getColor(new Point(i, j))
+      if (color) {
+        const position = { row: lines - i, col: j - 1 }
+        moves.push({
+          x: lineSpacing * position.col + boardUpLeftX,
+          y: lineSpacing * position.row + boardUpLeftY,
+          radius: boardSize * 0.025,
+          fill: color.toString(),
+        })
+      }
+    }
+  }
+
+  return moves
+})
+
 const startPosition = [
   {
     row: 4,
@@ -82,8 +108,8 @@ const updateStageSize = () => {
 
   boardSize = size * 0.9
 
-  upLeftX = (size - boardSize) / 2
-  upLeftY = (size - boardSize) / 2
+  boardUpLeftX = (size - boardSize) / 2
+  boardUpLeftY = (size - boardSize) / 2
 
   // Grid density and line spacing
   const gridDensity = lines - 1 // Number of lines
@@ -98,7 +124,12 @@ const updateStageSize = () => {
   // Generate horizontal lines
   for (let i = 0; i <= gridDensity; i++) {
     horizontalLines.value.push({
-      points: [upLeftX, upLeftY + i * lineSpacing, upLeftX + boardSize, upLeftY + i * lineSpacing], // Horizontal line
+      points: [
+        boardUpLeftX,
+        boardUpLeftY + i * lineSpacing,
+        boardUpLeftX + boardSize,
+        boardUpLeftY + i * lineSpacing,
+      ], // Horizontal line
       stroke: 'black',
       strokeWidth: strokeWidth,
     })
@@ -107,7 +138,12 @@ const updateStageSize = () => {
   // Generate vertical lines
   for (let i = 0; i <= gridDensity; i++) {
     verticalLines.value.push({
-      points: [upLeftX + i * lineSpacing, upLeftY, upLeftX + i * lineSpacing, upLeftY + boardSize], // Vertical line
+      points: [
+        boardUpLeftX + i * lineSpacing,
+        boardUpLeftY,
+        boardUpLeftX + i * lineSpacing,
+        boardUpLeftY + boardSize,
+      ], // Vertical line
       stroke: 'black',
       strokeWidth: strokeWidth,
     })
@@ -150,8 +186,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', updateStageSize)
 })
 
-// Handle mouse move event
-const handleMouseMove = (event) => {
+const getCanvasPosition = (event) => {
   const stage = event.target.getStage() // Get the stage object
   const mousePosition = stage.getPointerPosition() // Get mouse position relative to the stage
 
@@ -159,20 +194,35 @@ const handleMouseMove = (event) => {
   const canvasX = mousePosition.x - stage.x() // Adjust x relative to the stage
   const canvasY = mousePosition.y - stage.y() // Adjust y relative to the stage
 
-  // console.log(`Mouse moved relative to canvas: x = ${canvasX}, y = ${canvasY}`);
+  return { x: canvasX, y: canvasY }
+}
 
-  const boardX = canvasX - upLeftX
-  const boardY = canvasY - upLeftY
-
+function getMovePosition(boardX, boardY) {
   const row = Math.round(boardY / lineSpacing)
   const col = Math.round(boardX / lineSpacing)
+  return { row, col }
+}
 
-  const centerX = upLeftX + col * lineSpacing
-  const centerY = upLeftY + row * lineSpacing
+// Handle mouse move event
+const handleMouseMove = (event) => {
+  const canvasPosition = getCanvasPosition(event)
+
+  // Get the canvas position relative to the stage (if any transformation like scale or position is applied)
+  const canvasX = canvasPosition.x // Adjust x relative to the stage
+  const canvasY = canvasPosition.y // Adjust y relative to the stage
+
+  // console.log(`Mouse moved relative to canvas: x = ${canvasX}, y = ${canvasY}`);
+  const boardX = canvasX - boardUpLeftX
+  const boardY = canvasY - boardUpLeftY
+
+  const { row, col } = getMovePosition(boardX, boardY)
+
+  const centerX = boardUpLeftX + col * lineSpacing
+  const centerY = boardUpLeftY + row * lineSpacing
 
   const cursorWidth = boardSize * 0.03
 
-  if (row < 0 || row > lines -1 || col < 0 || col > lines -1) {
+  if (row < 0 || row > lines - 1 || col < 0 || col > lines - 1) {
     cursorConfig.value = null
     return
   }
@@ -180,9 +230,35 @@ const handleMouseMove = (event) => {
   cursorConfig.value = {
     x: centerX - cursorWidth / 2,
     y: centerY - cursorWidth / 2,
-    fill: 'black',
+    fill: gameState.value.nextPlayer.toString(),
     width: cursorWidth,
     height: cursorWidth,
+  }
+}
+
+const transFormPosition = ({ row, col }) => {
+  return {
+    row: lines - row,
+    col: col + 1,
+  }
+}
+
+const handleClick = (event) => {
+  const canvasPosition = getCanvasPosition(event)
+
+  // Get the canvas position relative to the stage (if any transformation like scale or position is applied)
+  const canvasX = canvasPosition.x // Adjust x relative to the stage
+  const canvasY = canvasPosition.y // Adjust y relative to the stage
+
+  // console.log(`Mouse moved relative to canvas: x = ${canvasX}, y = ${canvasY}`);
+  const boardX = canvasX - boardUpLeftX
+  const boardY = canvasY - boardUpLeftY
+
+  const { row, col } = transFormPosition(getMovePosition(boardX, boardY))
+
+  if (cursorConfig.value) {
+    const move = new Move(new Point(row, col), null, null)
+    gameState.value = gameState.value.applyMove(move)
   }
 }
 
@@ -193,7 +269,12 @@ const handleMouseLeave = () => {
 
 <template>
   <div ref="container" class="stage-container">
-    <v-stage :config="stageConfig" @mousemove="handleMouseMove" @mouseleave="handleMouseLeave">
+    <v-stage
+      :config="stageConfig"
+      @click="handleClick"
+      @mouseleave="handleMouseLeave"
+      @mousemove="handleMouseMove"
+    >
       <v-layer>
         <v-image :config="imageConfig"></v-image>
         <!-- Horizontal Lines -->
@@ -203,6 +284,8 @@ const handleMouseLeave = () => {
 
         <v-circle v-for="(star, index) in stars" :key="'v-' + index" :config="star" />
         <v-rect v-if="cursorConfig" :config="cursorConfig" />
+
+        <v-circle v-for="move in moves" :key="move.x + '-' + move.y" :config="move" />
       </v-layer>
     </v-stage>
   </div>

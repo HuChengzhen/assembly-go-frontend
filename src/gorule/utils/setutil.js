@@ -9,3 +9,9 @@ export function setEquals(setA, setB) {
   }
   return true
 }
+
+export function removeElementsFromSet(originalSet, elementsToRemove) {
+  elementsToRemove.forEach((element) => {
+    originalSet.delete(element)
+  })
+}
