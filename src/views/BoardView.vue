@@ -1,6 +1,8 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import woodtexture from '@/assets/images/woodtexture.jpg'
+import blackSrc from '@/assets/images/black.png'
+import whiteSrc from '@/assets/images/white.png'
 import { GameState } from '@/gorule/gameState.js'
 import { Move } from '@/gorule/move.js'
 import { Point } from '@/gorule/point.js'
@@ -25,20 +27,22 @@ const horizontalLines = ref([])
 const verticalLines = ref([])
 const stars = ref([])
 const gameState = ref(GameState.newGame(lines))
-
+const blackImage = ref(null)
+const whiteImage = ref(null)
 const moves = computed(() => {
   const moves = []
-
+  const radius = boardSize * 0.05
   for (let i = 1; i <= lines; i++) {
     for (let j = 1; j <= lines; j++) {
       const color = gameState.value.board.getColor(new Point(i, j))
       if (color) {
         const position = { row: lines - i, col: j - 1 }
         moves.push({
-          x: lineSpacing.value * position.col + boardUpLeftX,
-          y: lineSpacing.value * position.row + boardUpLeftY,
-          radius: boardSize * 0.025,
-          fill: color.toString(),
+          x: lineSpacing.value * position.col + boardUpLeftX - radius / 2,
+          y: lineSpacing.value * position.row + boardUpLeftY - radius / 2,
+          image: color.toString() === 'black' ? blackImage.value : whiteImage.value,
+          width: radius,
+          height: radius,
         })
       }
     }
@@ -185,29 +189,45 @@ const loadImage = () => {
   img.onerror = (err) => {
     console.error('Failed to load image:', err)
   }
+
+  const blackImg = new Image()
+  blackImg.src = blackSrc
+  blackImg.onload = () => {
+    blackImage.value = blackImg // Set the loaded image into Konva config
+    updateStageSize() // Update grid after the image is loaded
+  }
+
+  const whiteImg = new Image()
+  whiteImg.src = whiteSrc
+  whiteImg.onload = () => {
+    whiteImage.value = whiteImg // Set the loaded image into Konva config
+    updateStageSize() // Update grid after the image is loaded
+  }
 }
 
 onMounted(() => {
   loadImage()
   window.addEventListener('resize', updateStageSize)
-  socket = new WebSocket('ws://127.0.0.1:8080/ws')  socket.addEventListener('open', (event) => {
+  socket = new WebSocket('ws://127.0.0.1:8080/ws')
+  socket.addEventListener('open', (event) => {
     console.log('WebSocket is open now.')
- })
+  })
 
- // Event listener for when a message is received from the server
+  // Event listener for when a message is received from the server
   socket.addEventListener('message', (event) => {
     console.log('Message from server:', event.data)
- })
+  })
 
- socket.addEventListener('close', (event) => {
+  socket.addEventListener('close', (event) => {
     console.log('WebSocket is closed now.')
-  )
+  })
 
-  ocket.addEventListener('error', (event) => {
+  socket.addEventListener('error', (event) => {
     console.error('WebSocket error observed:', event)
-  })})
+  })
+})
 
-oBeforeUnmount(() => {
+onBeforeUnmount(() => {
   window.removeEventListener('resize', updateStageSize)
 })
 
@@ -312,7 +332,8 @@ const handleMouseLeave = () => {
         <v-circle v-for="(star, index) in stars" :key="'v-' + index" :config="star" />
         <v-rect v-if="cursorConfig" :config="cursorConfig" />
 
-        <v-circle v-for="move in moves" :key="move.x + '-' + move.y" :config="move" />
+        <!--        <v-circle v-for="move in moves" :key="move.x + '-' + move.y" :config="move" />-->
+        <v-image v-for="move in moves" :key="move.x + '-' + move.y" :config="move" />
       </v-layer>
     </v-stage>
   </div>
